@@ -23,7 +23,7 @@ function mergeOrderItemsDone(previousOrder, nextOrder) {
 
   nextOrder.items = nextOrder.items.map((item, index) => ({
     ...item,
-    done: previousOrder.items[index]?.done || false
+    done: (previousOrder.items[index] && previousOrder.items[index].done) || false
   }));
 
   return nextOrder;
