@@ -1225,7 +1225,7 @@ function renderActivePanel() {
     if (order.status === "ready") {
       label = "LISTO (ENTREGAR)";
     } else if (order.status === "delivered") {
-      label = "COBRAR";
+      label = "MARCAR PAGADA";
     }
     const actionClass = order.status === "ready"
       ? "action-ready"
