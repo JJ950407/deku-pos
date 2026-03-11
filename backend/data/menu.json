@@ -4,7 +4,7 @@
       "id": "ramen_deku",
       "name": "Deku Ramen",
       "category": "ramen",
-      "prices": { "M": 115, "G": 130 },
+      "prices": { "M": 125, "G": 140 },
       "image": "ramen_deku.png",
       "options": ["M", "G"]
     },
@@ -12,7 +12,7 @@
       "id": "ramen_ebi",
       "name": "Ebi Tonkotsu",
       "category": "ramen",
-      "prices": { "M": 100, "G": 115 },
+      "prices": { "M": 110, "G": 125 },
       "image": "ramen_ebi.png",
       "options": ["M", "G"]
     },
@@ -20,7 +20,7 @@
       "id": "ramen_yasai",
       "name": "Yasai Ramen",
       "category": "ramen",
-      "prices": { "M": 85, "G": 100 },
+      "prices": { "M": 95, "G": 110 },
       "image": "ramen_yasai.png",
       "options": ["M", "G"]
     },
@@ -77,21 +77,21 @@
       "id": "side_tempura",
       "name": "Camarones Tempura (5 pzas)",
       "category": "sides",
-      "price": 65,
+      "price": 80,
       "image": "side_tempura.png"
     },
     {
       "id": "side_gyozas",
       "name": "Gyozas (5 pzas)",
       "category": "sides",
-      "price": 55,
+      "price": 65,
       "image": "side_gyozas.png"
     },
     {
       "id": "side_takoyaki",
       "name": "Takoyaki (5 pzas)",
       "category": "sides",
-      "price": 60,
+      "price": 70,
       "image": "side_takoyaki.png"
     },
     {
@@ -105,35 +105,35 @@
       "id": "side_dumplings",
       "name": "Dumplings",
       "category": "sides",
-      "price": 60,
+      "price": 65,
       "image": "dumplins.png"
     },
     {
       "id": "drink_coca",
       "name": "Coca-Cola",
       "category": "drinks",
-      "price": 20,
+      "price": 25,
       "image": "drink_coca.png"
     },
     {
       "id": "drink_manzanita",
       "name": "Manzanita",
       "category": "drinks",
-      "price": 15,
+      "price": 20,
       "image": "drink_manzanita.png"
     },
     {
       "id": "drink_fanta",
       "name": "Fanta",
       "category": "drinks",
-      "price": 15,
+      "price": 20,
       "image": "drink_fanta.png"
     },
     {
       "id": "drink_pepsi",
       "name": "Pepsi",
       "category": "drinks",
-      "price": 15,
+      "price": 20,
       "image": "drink_pepsi.png"
     },
     {
