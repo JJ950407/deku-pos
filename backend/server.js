@@ -588,6 +588,107 @@ app.patch("/api/orders/:id", (req, res) => {
   res.json(result.order);
 });
 
+app.post("/api/orders/:id/items", (req, res) => {
+  const { id } = req.params;
+  const itemsToAppend = req.body && Array.isArray(req.body.items) ? req.body.items : null;
+  if (!itemsToAppend || !itemsToAppend.length) {
+    return res.status(400).json({ error: "Items inválidos." });
+  }
+
+  const orders = loadOrders();
+  const order = orders.find((item) => item.id === id);
+  if (!order) {
+    return res.status(404).json({ error: "Orden no encontrada." });
+  }
+  if (["paid", "cancelled"].includes(order.status)) {
+    return res.status(400).json({ error: "La orden no puede editarse." });
+  }
+
+  const normalizedItems = itemsToAppend
+    .map((item) => ({
+      productId: item && item.productId,
+      name: item && item.name,
+      qty: Number(item && item.qty),
+      basePrice: Number(item && item.basePrice),
+      unitPrice: Number(item && item.unitPrice),
+      meta: item && item.meta ? item.meta : {}
+    }))
+    .filter((item) => item.productId && item.name && Number.isFinite(item.qty) && item.qty > 0 && Number.isFinite(item.unitPrice));
+
+  if (!normalizedItems.length) {
+    return res.status(400).json({ error: "Items inválidos." });
+  }
+
+  order.items = [...(order.items || []), ...normalizedItems];
+
+  const subtotal = order.items.reduce((sum, item) => {
+    const qty = Number(item.qty);
+    const unitPrice = Number(item.unitPrice);
+    if (!Number.isFinite(qty) || !Number.isFinite(unitPrice)) {
+      return sum;
+    }
+    return sum + qty * unitPrice;
+  }, 0);
+
+  const now = new Date();
+  const promoState = loadPromoState();
+  const promoPayload = buildPromoPayload(promoState, now);
+  const promoDiscount = calculatePromoDiscount(order.items);
+  const promoApplied = promoPayload.promoActive && promoDiscount > 0;
+
+  order.totals = {
+    subtotal,
+    total: promoApplied ? Math.max(0, subtotal - promoDiscount) : subtotal
+  };
+  order.promoApplied = promoApplied;
+  order.promoType = "2x1_jueves";
+  order.promoSource = promoPayload.promoActive ? promoPayload.promoSource : null;
+  order.promoDiscount = promoDiscount;
+  order.promoTimestamp = now.toISOString();
+
+  saveOrders(orders);
+  broadcast("order:updated", order);
+  syncReadyTimer(order);
+  res.json(order);
+});
+
+app.post("/api/orders/cleanup-tests", (req, res) => {
+  const body = req.body || {};
+  if (body.confirmText !== "LIMPIAR") {
+    return res.status(400).json({ error: "Confirmación inválida." });
+  }
+  const date = typeof body.date === "string" ? body.date.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: "Fecha inválida." });
+  }
+
+  const orders = loadOrders();
+  const keep = [];
+  let removed = 0;
+
+  orders.forEach((order) => {
+    const sourceDate = order && (order.createdAt || order.timestamp || order.updatedAt);
+    const parsed = sourceDate ? new Date(sourceDate) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) {
+      keep.push(order);
+      return;
+    }
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const orderDate = `${year}-${month}-${day}`;
+    if (orderDate === date) {
+      removed += 1;
+      clearReadyTimer(order.id);
+      return;
+    }
+    keep.push(order);
+  });
+
+  saveOrders(keep);
+  res.json({ ok: true, removed, date });
+});
+
 app.get("/login", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "login.html"));
 });
