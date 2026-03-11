@@ -607,6 +607,21 @@ function buildRamenDetail(meta) {
   return `Tamaño ${meta.size} · Picante ${meta.spicy}${extras}`;
 }
 
+function getSpicyOptions() {
+  const spicyOptions = getMenuByCategory("spicy");
+  if (spicyOptions.some((option) => option.id === "spicy_0")) {
+    return spicyOptions;
+  }
+  return [
+    {
+      id: "spicy_0",
+      name: "Picante 0",
+      category: "spicy"
+    },
+    ...spicyOptions
+  ];
+}
+
 function openWizard(ramen) {
   state.wizard.open = true;
   state.wizard.step = 0;
@@ -649,13 +664,13 @@ function renderWizardStep() {
   }
 
   if (step === 1) {
-    const spicyOptions = getMenuByCategory("spicy");
+    const spicyOptions = getSpicyOptions();
     wizardStep.innerHTML = `
       <h3>2. Elige picante</h3>
       <div class="option-grid">
         ${spicyOptions.map((option) => `
           <div class="option-card ${ramen.spicy === Number(option.id.split("_")[1]) ? "selected" : ""}" data-spicy="${option.id}">
-            <img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />
+            ${option.image ? `<img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />` : ""}
             <h4>${option.name}</h4>
           </div>
         `).join("")}
@@ -751,7 +766,7 @@ wizardNext.addEventListener("click", () => {
     return setStatus("Selecciona un tamaño.");
   }
 
-  if (step === 1 && !ramen.spicy) {
+  if (step === 1 && (ramen.spicy === null || ramen.spicy === undefined)) {
     return setStatus("Selecciona nivel de picante.");
   }
 
@@ -1032,7 +1047,7 @@ function renderHistoryTicket(order) {
   const lines = order.items.map((item) => {
     const lineTotal = item.qty * item.unitPrice;
     const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-    const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+    const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
     
     // Construir nombre con extras incluidos en UNA SOLA LÍNEA
     let displayName = `${item.name}${size}${spicy}`;
@@ -1123,7 +1138,7 @@ function renderActivePanel() {
     const statusLabel = order.status.toUpperCase();
     const items = order.items.map((item) => {
       const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-      const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+      const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
       let displayName = `${item.name}${size}${spicy}`;
       if (item.meta && item.meta.extras && item.meta.extras.length > 0) {
         const extraNames = item.meta.extras.map((extra) => extra.name).join(" + ");
