@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deku Ramen POS</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css?v=20260226-1" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">
+      <img src="/assets/brand/logo.png" alt="Deku Ramen" class="logo" />
+      <div class="brand-text">
+        <div class="title">Deku Ramen POS</div>
+        <div class="subtitle">Comanda rápida · Touch-first</div>
+      </div>
+    </div>
+    <div class="settings">
+      <label for="backendUrl">Backend</label>
+      <input id="backendUrl" type="text" placeholder="http://localhost:3000" />
+      <button id="saveBackend">Guardar</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="categories" id="categoryList">
+      <button class="category active" data-category="ramen">Ramen</button>
+      <button class="category" data-category="extras">Extras</button>
+      <button class="category" data-category="sides">Acompañamientos</button>
+      <button class="category" data-category="drinks">Bebidas</button>
+    </aside>
+
+    <section class="products">
+      <h2 id="categoryTitle">Ramen</h2>
+      <div id="productGrid" class="product-grid"></div>
+    </section>
+
+    <aside class="cart">
+      <h2>Ticket</h2>
+      <div class="cart-item">
+        <label for="tableSelect"><strong>Mesa</strong></label>
+        <select id="tableSelect">
+          <option value="">Selecciona...</option>
+          <option value="1">Mesa 1</option>
+          <option value="2">Mesa 2</option>
+          <option value="3">Mesa 3</option>
+          <option value="4">Mesa 4</option>
+          <option value="5">Mesa 5</option>
+          <option value="6">Mesa 6</option>
+          <option value="7">Mesa 7</option>
+          <option value="8">Mesa 8</option>
+          <option value="9">Mesa 9</option>
+          <option value="10">Mesa 10</option>
+          <option value="PL">Para llevar</option>
+        </select>
+      </div>
+      <div id="cartItems" class="cart-items"></div>
+      <div class="cart-summary">
+        <div>
+          <span>Subtotal</span>
+          <strong id="subtotal">$0</strong>
+        </div>
+        <div>
+          <span>Total</span>
+          <strong id="total">$0</strong>
+        </div>
+      </div>
+      <div class="cart-item">
+        <div id="promoStatus">PROMO 2x1: INACTIVA</div>
+        <button id="promoToggle" class="ghost">Activar override</button>
+      </div>
+      <div class="cart-item">
+        <button id="orderFlowButton" class="ghost">ORDENAR</button>
+        <button id="orderNextButton" class="ghost" hidden>SIGUIENTE</button>
+        <div id="orderPrompt"></div>
+      </div>
+      <button id="openHistory" class="ghost">Historial</button>
+      <button id="sendOrder" class="primary">ENVIAR A COCINA</button>
+      <p id="orderStatus" class="status"></p>
+    </aside>
+  </main>
+
+  <section id="ramenWizard" class="modal hidden">
+    <div class="modal-content">
+      <header>
+        <h2 id="wizardTitle">Configura tu ramen</h2>
+        <button id="closeWizard" class="ghost">Cerrar</button>
+      </header>
+      <div class="wizard-step" id="wizardStep"></div>
+      <footer class="wizard-footer">
+        <button id="wizardBack" class="ghost">Atrás</button>
+        <button id="wizardNext" class="primary">Siguiente</button>
+      </footer>
+    </div>
+  </section>
+
+  <section id="historyModal" class="modal hidden">
+    <div class="modal-content">
+      <header>
+        <h2>Historial</h2>
+        <button id="downloadCsv" class="ghost">Descargar CSV</button>
+        <button id="downloadItemsCsv" class="ghost">CSV Comandas</button>
+        <button id="closeHistory" class="ghost">Cerrar</button>
+      </header>
+      <div class="cart-item">
+        <label for="historyStatus"><strong>Filtro</strong></label>
+        <select id="historyStatus">
+          <option value="active">Activas</option>
+          <option value="delivered">Entregadas</option>
+          <option value="paid">Pagadas</option>
+          <option value="cancelled">Canceladas</option>
+          <option value="all">Todas</option>
+        </select>
+      </div>
+      <div class="cart-item">
+        <label for="historyTable"><strong>Mesa</strong></label>
+        <select id="historyTable">
+          <option value="">Todas</option>
+          <option value="1">Mesa 1</option>
+          <option value="2">Mesa 2</option>
+          <option value="3">Mesa 3</option>
+          <option value="4">Mesa 4</option>
+          <option value="5">Mesa 5</option>
+          <option value="6">Mesa 6</option>
+          <option value="7">Mesa 7</option>
+          <option value="8">Mesa 8</option>
+          <option value="9">Mesa 9</option>
+          <option value="10">Mesa 10</option>
+          <option value="PL">Para llevar</option>
+        </select>
+      </div>
+      <div id="historyList" class="cart-items"></div>
+      <div id="historyTicket" class="cart-item"></div>
+    </div>
+  </section>
+
+  <script src="config.js?v=20260226-1"></script>
+  <script src="app.js?v=20260226-1"></script>
+</body>
+</html>

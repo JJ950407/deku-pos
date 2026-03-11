@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deku Ramen POS · Login</title>
+  <link rel="stylesheet" href="/login.css" />
+</head>
+<body>
+  <main class="login">
+    <img src="/assets/brand/logo.png" alt="Deku Ramen" class="logo" />
+    <form id="loginForm" class="login-card">
+      <label class="field">
+        <span>Usuario</span>
+        <input id="username" type="text" autocomplete="username" required />
+      </label>
+      <label class="field">
+        <span>Contraseña</span>
+        <input id="password" type="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit" class="primary">Entrar</button>
+      <button type="button" id="kitchenButton" class="secondary">APP COCINA</button>
+      <p id="loginError" class="error"></p>
+    </form>
+  </main>
+  <script src="/login.js"></script>
+  
+  <!-- Contenedor de pétalos animados -->
+  <div id="petals-container"></div>
+  
+  <script>
+  // Animación de pétalos de cerezo - Apple Glass 2026
+  (function() {
+      const container = document.getElementById('petals-container');
+      const petalCount = 20;
+      const colors = [
+          'rgba(255, 182, 193, 0.85)',
+          'rgba(255, 105, 180, 0.65)',
+          'rgba(255, 20, 147, 0.55)',
+          'rgba(255, 192, 203, 0.75)',
+          'rgba(255, 160, 180, 0.65)'
+      ];
+      
+      function createPetal() {
+          const petal = document.createElement('div');
+          petal.className = 'petal';
+          
+          const startX = Math.random() * 100;
+          petal.style.left = startX + '%';
+          petal.style.top = '-20px';
+          
+          const size = Math.random() * 6 + 8;
+          petal.style.width = size + 'px';
+          petal.style.height = size + 'px';
+          
+          petal.style.background = `linear-gradient(135deg, 
+              ${colors[Math.floor(Math.random() * colors.length)]} 0%, 
+              ${colors[Math.floor(Math.random() * colors.length)]} 100%)`;
+          
+          const duration = Math.random() * 6 + 10;
+          const delay = Math.random() * 5;
+          petal.style.animationDuration = `${duration}s, ${duration * 0.5}s`;
+          petal.style.animationDelay = `${delay}s, ${delay}s`;
+          
+          petal.style.transform = `rotate(${Math.random() * 360}deg)`;
+          
+          container.appendChild(petal);
+          
+          setTimeout(() => {
+              if (petal.parentNode) {
+                  petal.parentNode.removeChild(petal);
+              }
+          }, (duration + delay) * 1000);
+      }
+      
+      for (let i = 0; i < petalCount; i++) {
+          setTimeout(createPetal, i * 400);
+      }
+      
+      setInterval(createPetal, 1000);
+  })();
+  </script>
+</body>
+</html>

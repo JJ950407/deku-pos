@@ -1,0 +1,196 @@
+{
+  "products": [
+    {
+      "id": "ramen_deku",
+      "name": "Deku Ramen",
+      "category": "ramen",
+      "prices": { "M": 115, "G": 130 },
+      "image": "ramen_deku.png",
+      "options": ["M", "G"]
+    },
+    {
+      "id": "ramen_ebi",
+      "name": "Ebi Tonkotsu",
+      "category": "ramen",
+      "prices": { "M": 100, "G": 115 },
+      "image": "ramen_ebi.png",
+      "options": ["M", "G"]
+    },
+    {
+      "id": "ramen_yasai",
+      "name": "Yasai Ramen",
+      "category": "ramen",
+      "prices": { "M": 85, "G": 100 },
+      "image": "ramen_yasai.png",
+      "options": ["M", "G"]
+    },
+    {
+      "id": "extra_fideos",
+      "name": "Extra Fideos",
+      "category": "extras",
+      "price": 15,
+      "image": "extra_fideos.png"
+    },
+    {
+      "id": "extra_cerdo",
+      "name": "Extra Cerdo",
+      "category": "extras",
+      "price": 20,
+      "image": "extra_cerdo.png"
+    },
+    {
+      "id": "extra_camarones",
+      "name": "Extra Camarones",
+      "category": "extras",
+      "price": 20,
+      "image": "extra_camarones.png"
+    },
+    {
+      "id": "extra_huevo",
+      "name": "Extra Huevo",
+      "category": "extras",
+      "price": 15,
+      "image": "extra_huevo.png"
+    },
+    {
+      "id": "extra_champinones",
+      "name": "Extra Champiñones",
+      "category": "extras",
+      "price": 15,
+      "image": "extra_champinones.png"
+    },
+    {
+      "id": "extra_hongo_zeta",
+      "name": "Extra Hongo Zeta",
+      "category": "extras",
+      "price": 15,
+      "image": "extra_hongo_zeta.png"
+    },
+    {
+      "id": "extra_algas",
+      "name": "Extra Algas",
+      "category": "extras",
+      "price": 15,
+      "image": "extra_algas.png"
+    },
+    {
+      "id": "side_tempura",
+      "name": "Camarones Tempura (5 pzas)",
+      "category": "sides",
+      "price": 65,
+      "image": "side_tempura.png"
+    },
+    {
+      "id": "side_gyozas",
+      "name": "Gyozas (5 pzas)",
+      "category": "sides",
+      "price": 55,
+      "image": "side_gyozas.png"
+    },
+    {
+      "id": "side_takoyaki",
+      "name": "Takoyaki (5 pzas)",
+      "category": "sides",
+      "price": 60,
+      "image": "side_takoyaki.png"
+    },
+    {
+      "id": "side_edamame",
+      "name": "Edamame",
+      "category": "sides",
+      "price": 35,
+      "image": "adamames.png"
+    },
+    {
+      "id": "side_dumplings",
+      "name": "Dumplings",
+      "category": "sides",
+      "price": 60,
+      "image": "dumplins.png"
+    },
+    {
+      "id": "drink_coca",
+      "name": "Coca-Cola",
+      "category": "drinks",
+      "price": 20,
+      "image": "drink_coca.png"
+    },
+    {
+      "id": "drink_manzanita",
+      "name": "Manzanita",
+      "category": "drinks",
+      "price": 15,
+      "image": "drink_manzanita.png"
+    },
+    {
+      "id": "drink_fanta",
+      "name": "Fanta",
+      "category": "drinks",
+      "price": 15,
+      "image": "drink_fanta.png"
+    },
+    {
+      "id": "drink_pepsi",
+      "name": "Pepsi",
+      "category": "drinks",
+      "price": 15,
+      "image": "drink_pepsi.png"
+    },
+    {
+      "id": "drink_agua_limon",
+      "name": "Agua Mineral Limón",
+      "category": "drinks",
+      "price": 20,
+      "image": "agua mineral limon.png"
+    },
+    {
+      "id": "drink_agua_limon_amarillo",
+      "name": "Agua Mineral Limón Amarillo",
+      "category": "drinks",
+      "price": 20,
+      "image": "agua mineral limon amarillo.png"
+    },
+    {
+      "id": "drink_frambuesa_negra",
+      "name": "Frambuesa Negra",
+      "category": "drinks",
+      "price": 20,
+      "image": "frambuesa-negra.png"
+    },
+    {
+      "id": "drink_fresa_kiwi",
+      "name": "Fresa Kiwi",
+      "category": "drinks",
+      "price": 20,
+      "image": "fresa-kiwi.png"
+    },
+    {
+      "id": "drink_mango_naranja",
+      "name": "Mango Naranja",
+      "category": "drinks",
+      "price": 20,
+      "image": "mango-naranja.png"
+    },
+    {
+      "id": "spicy_1",
+      "name": "Picante 1",
+      "category": "spicy",
+      "price": 0,
+      "image": "spicy_1.png"
+    },
+    {
+      "id": "spicy_2",
+      "name": "Picante 2",
+      "category": "spicy",
+      "price": 0,
+      "image": "spicy_2.png"
+    },
+    {
+      "id": "spicy_3",
+      "name": "Picante 3",
+      "category": "spicy",
+      "price": 0,
+      "image": "spicy_3.png"
+    }
+  ]
+}
