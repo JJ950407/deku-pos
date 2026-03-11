@@ -1320,7 +1320,6 @@ async function updateHistoryStatus(orderId, status, extra = {}) {
     refreshHistoryView();
   } catch (error) {
     console.error(error);
-    setStatus("No se pudo actualizar la orden.");
   }
 }
 
