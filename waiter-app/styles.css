@@ -341,6 +341,80 @@ body {
   margin-top: 8px;
 }
 
+#historyDate {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font: inherit;
+}
+
+.history-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.history-cash-closing {
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-cash-closing.hidden {
+  display: none;
+}
+
+.history-cash-closing h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.history-cash-date {
+  color: #666;
+  font-size: 13px;
+}
+
+.history-cash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-cash-line {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f1f1;
+  padding-bottom: 6px;
+}
+
+.history-cash-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #ececec;
+}
+
+.history-cash-total span {
+  color: #666;
+  font-size: 14px;
+}
+
+.history-cash-total strong {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
 #tableSelect {
   width: 100%;
   padding: 14px 16px;
@@ -416,6 +490,13 @@ body {
 .history-toggle,
 .history-action {
   width: 100%;
+}
+
+.history-order-card {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
 }
 
 .modal {

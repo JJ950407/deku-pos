@@ -130,7 +130,24 @@
           <option value="PL">Para llevar</option>
         </select>
       </div>
+      <div class="cart-item">
+        <label for="historyDate"><strong>Fecha</strong></label>
+        <input type="date" id="historyDate" />
+      </div>
+      <div class="history-actions">
+        <button id="runCashClosing" class="primary">Corte de caja</button>
+        <button id="cleanupTestOrders" class="ghost">Limpiar pruebas</button>
+      </div>
       <div id="historyList" class="cart-items"></div>
+      <div id="historyCashClosing" class="history-cash-closing hidden">
+        <h3>Corte de caja</h3>
+        <div id="historyCashClosingDate" class="history-cash-date"></div>
+        <div id="historyCashClosingList" class="history-cash-list"></div>
+        <div class="history-cash-total">
+          <span>TOTAL FINAL DEL DÍA</span>
+          <strong id="historyCashClosingTotal">$0</strong>
+        </div>
+      </div>
       <div id="historyTicket" class="cart-item"></div>
     </div>
   </section>
