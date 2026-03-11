@@ -55,7 +55,12 @@ const historyTicket = document.getElementById("historyTicket");
 const historyStatus = document.getElementById("historyStatus");
 const historyTable = document.getElementById("historyTable");
 const historyDate = document.getElementById("historyDate");
-const historyDailyTotal = document.getElementById("historyDailyTotal");
+const runCashClosing = document.getElementById("runCashClosing");
+const cleanupTestOrdersButton = document.getElementById("cleanupTestOrders");
+const historyCashClosing = document.getElementById("historyCashClosing");
+const historyCashClosingDate = document.getElementById("historyCashClosingDate");
+const historyCashClosingList = document.getElementById("historyCashClosingList");
+const historyCashClosingTotal = document.getElementById("historyCashClosingTotal");
 
 let historyOrders = [];
 let activeHistoryOrderId = null;
@@ -1007,12 +1012,46 @@ function getFilteredHistoryOrders() {
   return filtered;
 }
 
-function updateHistoryDailyTotal(orders) {
-  if (!historyDailyTotal) return;
-  const totalNode = historyDailyTotal.querySelector("strong");
-  if (!totalNode) return;
+function getCashClosingOrdersByDate(dateKey) {
+  if (!dateKey) return [];
+  return historyOrders.filter((order) => order.status === "paid" && getOrderDateKey(order) === dateKey);
+}
+
+function hideCashClosingSummary() {
+  if (!historyCashClosing) return;
+  historyCashClosing.classList.add("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = "";
+  }
+  if (historyCashClosingList) {
+    historyCashClosingList.innerHTML = "";
+  }
+  if (historyCashClosingTotal) {
+    historyCashClosingTotal.textContent = formatPrice(0);
+  }
+}
+
+function renderCashClosingSummary() {
+  if (!historyDate || !historyCashClosing || !historyCashClosingList || !historyCashClosingTotal) return;
+  const dateKey = historyDate.value;
+  const orders = getCashClosingOrdersByDate(dateKey);
+  const lines = orders.map((order) => {
+    const total = calculateOrderTotal(order);
+    return `
+      <div class="history-cash-line">
+        <span>${buildTableLabel(order.table)}</span>
+        <span>${formatTime(order.createdAt)}</span>
+        <strong>${formatPrice(total)}</strong>
+      </div>
+    `;
+  }).join("");
+  historyCashClosing.classList.remove("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = `Fecha: ${dateKey}`;
+  }
+  historyCashClosingList.innerHTML = lines || "<p>No hay comandas pagadas para esta fecha.</p>";
   const total = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
-  totalNode.textContent = formatPrice(total);
+  historyCashClosingTotal.textContent = formatPrice(total);
 }
 
 function renderHistoryList(orders) {
@@ -1249,6 +1288,7 @@ async function fetchHistoryOrders() {
 
 function refreshHistoryView() {
   ensureHistoryDateDefault();
+  hideCashClosingSummary();
   const filtered = getFilteredHistoryOrders();
   renderHistoryList(filtered);
   updateHistoryDailyTotal(filtered);
@@ -1290,6 +1330,7 @@ function cancelHistoryOrder(orderId) {
 async function openHistoryModal() {
   historyModal.classList.remove("hidden");
   ensureHistoryDateDefault();
+  hideCashClosingSummary();
   if (historyStatus && historyStatus.parentElement && !historyToggleButton) {
     historyToggleButton = document.createElement("button");
     historyToggleButton.className = "primary history-toggle";
@@ -1313,6 +1354,37 @@ async function openHistoryModal() {
 function closeHistoryModal() {
   historyModal.classList.add("hidden");
   activeHistoryOrderId = null;
+  hideCashClosingSummary();
+}
+
+async function cleanupTestOrders() {
+  ensureHistoryDateDefault();
+  if (!historyDate || !historyDate.value) {
+    return setStatus("Selecciona una fecha para limpiar pruebas.");
+  }
+  const confirmation = prompt(`Escribe LIMPIAR para borrar comandas de prueba del día ${historyDate.value}`);
+  if (confirmation !== "LIMPIAR") {
+    return;
+  }
+  try {
+    const response = await fetch(apiUrl("/api/orders/cleanup-tests"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmText: "LIMPIAR",
+        date: historyDate.value
+      })
+    });
+    if (!response.ok) {
+      throw new Error("No se pudo limpiar pruebas");
+    }
+    await fetchHistoryOrders();
+    refreshHistoryView();
+    setStatus("Comandas de prueba eliminadas.");
+  } catch (error) {
+    console.error(error);
+    setStatus("No se pudo limpiar comandas de prueba.");
+  }
 }
 
 if (openHistory) {
@@ -1333,6 +1405,17 @@ if (historyTable) {
 
 if (historyDate) {
   historyDate.addEventListener("change", refreshHistoryView);
+}
+
+if (runCashClosing) {
+  runCashClosing.addEventListener("click", () => {
+    ensureHistoryDateDefault();
+    renderCashClosingSummary();
+  });
+}
+
+if (cleanupTestOrdersButton) {
+  cleanupTestOrdersButton.addEventListener("click", cleanupTestOrders);
 }
 
 if (promoToggle) {

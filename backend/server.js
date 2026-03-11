@@ -588,6 +588,43 @@ app.patch("/api/orders/:id", (req, res) => {
   res.json(result.order);
 });
 
+app.post("/api/orders/cleanup-tests", (req, res) => {
+  const body = req.body || {};
+  if (body.confirmText !== "LIMPIAR") {
+    return res.status(400).json({ error: "Confirmación inválida." });
+  }
+  const date = typeof body.date === "string" ? body.date.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: "Fecha inválida." });
+  }
+
+  const orders = loadOrders();
+  const keep = [];
+  let removed = 0;
+
+  orders.forEach((order) => {
+    const sourceDate = order && (order.createdAt || order.timestamp || order.updatedAt);
+    const parsed = sourceDate ? new Date(sourceDate) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) {
+      keep.push(order);
+      return;
+    }
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const orderDate = `${year}-${month}-${day}`;
+    if (orderDate === date) {
+      removed += 1;
+      clearReadyTimer(order.id);
+      return;
+    }
+    keep.push(order);
+  });
+
+  saveOrders(keep);
+  res.json({ ok: true, removed, date });
+});
+
 app.get("/login", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "login.html"));
 });
