@@ -148,6 +148,17 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+}
+
+.order-item.done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.check {
+  margin-right: 8px;
+  font-weight: bold;
 }
 
 .item-info {

@@ -3,8 +3,24 @@ const connectionStatus = document.getElementById("connectionStatus");
 const BASE_URL = window.location.origin;
 
 let orders = [];
+const itemDoneState = new Map();
 let menuMap = new Map();
 let menuNameMap = new Map();
+
+function getItemDoneKey(orderId, itemIndex) {
+  return `${orderId}:${itemIndex}`;
+}
+
+function toggleItem(orderId, itemIndex) {
+  const order = orders.find((entry) => entry.id === orderId);
+  if (!order || !Array.isArray(order.items) || !order.items[itemIndex]) {
+    return;
+  }
+  const key = getItemDoneKey(orderId, itemIndex);
+  const next = !itemDoneState.get(key);
+  itemDoneState.set(key, next);
+  renderOrders();
+}
 
 function isLocalhostHost(hostname) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
@@ -72,7 +88,7 @@ function buildItemLine(item) {
     const extras = item.meta.extras && item.meta.extras.length
       ? ` | Extras: ${item.meta.extras.map((extra) => `${extra.name} x${extra.qty}`).join(", ")}`
       : "";
-    const spicy = item.meta.spicy ? `, Picante ${item.meta.spicy}` : "";
+    const spicy = item.meta.spicy !== null && item.meta.spicy !== undefined ? `, Picante ${item.meta.spicy}` : "";
     return `${item.qty}x ${item.name} (${item.meta.size}${spicy}${extras})`;
   }
   return `${item.qty}x ${item.name}`;
@@ -90,7 +106,7 @@ function getProductImageByName(name) {
 
 function renderOrders() {
   ordersContainer.innerHTML = "";
-  const visibleOrders = orders.filter((order) => !["delivered", "paid", "cancelled"].includes(order.status));
+  const visibleOrders = orders.filter((order) => !["paid", "cancelled"].includes(order.status));
   if (visibleOrders.length === 0) {
     ordersContainer.innerHTML = "<p>No hay órdenes por ahora.</p>";
     return;
@@ -114,9 +130,24 @@ function renderOrders() {
 
     const items = document.createElement("div");
     items.className = "order-items";
-    order.items.forEach((item) => {
+    order.items.forEach((item, itemIndex) => {
       const line = document.createElement("div");
-      line.className = "order-item";
+      const done = itemDoneState.get(getItemDoneKey(order.id, itemIndex));
+      line.className = `order-item${done ? " done" : ""}`;
+      line.setAttribute("role", "button");
+      line.tabIndex = 0;
+      line.addEventListener("click", () => toggleItem(order.id, itemIndex));
+      line.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleItem(order.id, itemIndex);
+        }
+      });
+
+      const check = document.createElement("span");
+      check.className = "check";
+      check.textContent = done ? "✔" : "⬜";
+      line.appendChild(check);
 
       const imageSrc = getProductImage(item.productId);
       if (imageSrc) {
@@ -131,7 +162,7 @@ function renderOrders() {
       info.className = "item-info";
       info.textContent = buildItemLine(item);
 
-      if (item.meta && item.meta.spicy) {
+      if (item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined) {
         const spicyIcon = document.createElement("img");
         spicyIcon.className = "spicy-icon";
         spicyIcon.src = assetUrl(`/assets/menu/spicy_${item.meta.spicy}.png`);
