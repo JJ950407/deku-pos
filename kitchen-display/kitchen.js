@@ -72,7 +72,7 @@ function buildItemLine(item) {
     const extras = item.meta.extras && item.meta.extras.length
       ? ` | Extras: ${item.meta.extras.map((extra) => `${extra.name} x${extra.qty}`).join(", ")}`
       : "";
-    const spicy = item.meta.spicy ? `, Picante ${item.meta.spicy}` : "";
+    const spicy = item.meta.spicy !== null && item.meta.spicy !== undefined ? `, Picante ${item.meta.spicy}` : "";
     return `${item.qty}x ${item.name} (${item.meta.size}${spicy}${extras})`;
   }
   return `${item.qty}x ${item.name}`;
@@ -131,7 +131,7 @@ function renderOrders() {
       info.className = "item-info";
       info.textContent = buildItemLine(item);
 
-      if (item.meta && item.meta.spicy) {
+      if (item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined) {
         const spicyIcon = document.createElement("img");
         spicyIcon.className = "spicy-icon";
         spicyIcon.src = assetUrl(`/assets/menu/spicy_${item.meta.spicy}.png`);
