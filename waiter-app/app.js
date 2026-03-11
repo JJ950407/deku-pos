@@ -54,6 +54,8 @@ const historyList = document.getElementById("historyList");
 const historyTicket = document.getElementById("historyTicket");
 const historyStatus = document.getElementById("historyStatus");
 const historyTable = document.getElementById("historyTable");
+const historyDate = document.getElementById("historyDate");
+const historyDailyTotal = document.getElementById("historyDailyTotal");
 
 let historyOrders = [];
 let activeHistoryOrderId = null;
@@ -607,6 +609,21 @@ function buildRamenDetail(meta) {
   return `Tamaño ${meta.size} · Picante ${meta.spicy}${extras}`;
 }
 
+function getSpicyOptions() {
+  const spicyOptions = getMenuByCategory("spicy");
+  if (spicyOptions.some((option) => option.id === "spicy_0")) {
+    return spicyOptions;
+  }
+  return [
+    {
+      id: "spicy_0",
+      name: "Picante 0",
+      category: "spicy"
+    },
+    ...spicyOptions
+  ];
+}
+
 function openWizard(ramen) {
   state.wizard.open = true;
   state.wizard.step = 0;
@@ -649,13 +666,13 @@ function renderWizardStep() {
   }
 
   if (step === 1) {
-    const spicyOptions = getMenuByCategory("spicy");
+    const spicyOptions = getSpicyOptions();
     wizardStep.innerHTML = `
       <h3>2. Elige picante</h3>
       <div class="option-grid">
         ${spicyOptions.map((option) => `
           <div class="option-card ${ramen.spicy === Number(option.id.split("_")[1]) ? "selected" : ""}" data-spicy="${option.id}">
-            <img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />
+            ${option.image ? `<img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />` : ""}
             <h4>${option.name}</h4>
           </div>
         `).join("")}
@@ -751,7 +768,7 @@ wizardNext.addEventListener("click", () => {
     return setStatus("Selecciona un tamaño.");
   }
 
-  if (step === 1 && !ramen.spicy) {
+  if (step === 1 && (ramen.spicy === null || ramen.spicy === undefined)) {
     return setStatus("Selecciona nivel de picante.");
   }
 
@@ -951,9 +968,31 @@ function buildTableLabel(value) {
   return value === "PL" ? "Para llevar" : `Mesa ${value}`;
 }
 
+function getLocalDateKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getOrderDateKey(order) {
+  return getLocalDateKey(order.createdAt || order.timestamp || order.updatedAt);
+}
+
+function ensureHistoryDateDefault() {
+  if (!historyDate || historyDate.value) return;
+  historyDate.value = getLocalDateKey(new Date().toISOString());
+}
+
 function getFilteredHistoryOrders() {
   let filtered = [...historyOrders];
   const tableFilter = historyTable ? historyTable.value : "";
+  const dateFilter = historyDate ? historyDate.value : "";
   if (historyViewMode === "active") {
     filtered = filtered.filter((order) => ["pending", "preparing", "ready", "delivered"].includes(order.status));
   } else {
@@ -962,7 +1001,18 @@ function getFilteredHistoryOrders() {
   if (tableFilter) {
     filtered = filtered.filter((order) => order.table === tableFilter);
   }
+  if (dateFilter) {
+    filtered = filtered.filter((order) => getOrderDateKey(order) === dateFilter);
+  }
   return filtered;
+}
+
+function updateHistoryDailyTotal(orders) {
+  if (!historyDailyTotal) return;
+  const totalNode = historyDailyTotal.querySelector("strong");
+  if (!totalNode) return;
+  const total = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+  totalNode.textContent = formatPrice(total);
 }
 
 function renderHistoryList(orders) {
@@ -974,15 +1024,16 @@ function renderHistoryList(orders) {
   }
   orders.forEach((order) => {
     const item = document.createElement("div");
-    item.className = "cart-item";
+    item.className = "cart-item history-order-card";
     const shortId = order.id.split("-").slice(-1)[0];
     const statusLabel = order.status.toUpperCase();
+    const orderTotal = calculateOrderTotal(order);
     item.innerHTML = `
       <div class="cart-item-header">
-        <strong>${shortId}</strong>
-        <span>${formatPrice(order.totals.total)}</span>
+        <strong>${buildTableLabel(order.table)}</strong>
+        <span>${formatPrice(orderTotal)}</span>
       </div>
-      <small>${formatTime(order.createdAt)} · ${buildTableLabel(order.table)} · ${statusLabel}</small>
+      <small>${formatTime(order.createdAt)} · ${statusLabel} · ${shortId}</small>
     `;
     if (historyViewMode === "active") {
       const actions = document.createElement("div");
@@ -1032,7 +1083,7 @@ function renderHistoryTicket(order) {
   const lines = order.items.map((item) => {
     const lineTotal = item.qty * item.unitPrice;
     const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-    const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+    const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
     
     // Construir nombre con extras incluidos en UNA SOLA LÍNEA
     let displayName = `${item.name}${size}${spicy}`;
@@ -1123,7 +1174,7 @@ function renderActivePanel() {
     const statusLabel = order.status.toUpperCase();
     const items = order.items.map((item) => {
       const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-      const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+      const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
       let displayName = `${item.name}${size}${spicy}`;
       if (item.meta && item.meta.extras && item.meta.extras.length > 0) {
         const extraNames = item.meta.extras.map((extra) => extra.name).join(" + ");
@@ -1178,6 +1229,7 @@ function renderActivePanel() {
 async function openHistoryForOrder(orderId) {
   historyModal.classList.remove("hidden");
   try {
+    ensureHistoryDateDefault();
     await fetchHistoryOrders();
     refreshHistoryView();
     const current = historyOrders.find((order) => order.id === orderId);
@@ -1196,8 +1248,10 @@ async function fetchHistoryOrders() {
 }
 
 function refreshHistoryView() {
+  ensureHistoryDateDefault();
   const filtered = getFilteredHistoryOrders();
   renderHistoryList(filtered);
+  updateHistoryDailyTotal(filtered);
   renderActivePanel();
   if (activeHistoryOrderId) {
     const current = historyOrders.find((order) => order.id === activeHistoryOrderId);
@@ -1235,6 +1289,7 @@ function cancelHistoryOrder(orderId) {
 
 async function openHistoryModal() {
   historyModal.classList.remove("hidden");
+  ensureHistoryDateDefault();
   if (historyStatus && historyStatus.parentElement && !historyToggleButton) {
     historyToggleButton = document.createElement("button");
     historyToggleButton.className = "primary history-toggle";
@@ -1274,6 +1329,10 @@ if (historyStatus) {
 
 if (historyTable) {
   historyTable.addEventListener("change", refreshHistoryView);
+}
+
+if (historyDate) {
+  historyDate.addEventListener("change", refreshHistoryView);
 }
 
 if (promoToggle) {
