@@ -54,6 +54,13 @@ const historyList = document.getElementById("historyList");
 const historyTicket = document.getElementById("historyTicket");
 const historyStatus = document.getElementById("historyStatus");
 const historyTable = document.getElementById("historyTable");
+const historyDate = document.getElementById("historyDate");
+const runCashClosing = document.getElementById("runCashClosing");
+const cleanupTestOrdersButton = document.getElementById("cleanupTestOrders");
+const historyCashClosing = document.getElementById("historyCashClosing");
+const historyCashClosingDate = document.getElementById("historyCashClosingDate");
+const historyCashClosingList = document.getElementById("historyCashClosingList");
+const historyCashClosingTotal = document.getElementById("historyCashClosingTotal");
 
 let historyOrders = [];
 let activeHistoryOrderId = null;
@@ -607,6 +614,21 @@ function buildRamenDetail(meta) {
   return `Tamaño ${meta.size} · Picante ${meta.spicy}${extras}`;
 }
 
+function getSpicyOptions() {
+  const spicyOptions = getMenuByCategory("spicy");
+  if (spicyOptions.some((option) => option.id === "spicy_0")) {
+    return spicyOptions;
+  }
+  return [
+    {
+      id: "spicy_0",
+      name: "Picante 0",
+      category: "spicy"
+    },
+    ...spicyOptions
+  ];
+}
+
 function openWizard(ramen) {
   state.wizard.open = true;
   state.wizard.step = 0;
@@ -649,13 +671,13 @@ function renderWizardStep() {
   }
 
   if (step === 1) {
-    const spicyOptions = getMenuByCategory("spicy");
+    const spicyOptions = getSpicyOptions();
     wizardStep.innerHTML = `
       <h3>2. Elige picante</h3>
       <div class="option-grid">
         ${spicyOptions.map((option) => `
           <div class="option-card ${ramen.spicy === Number(option.id.split("_")[1]) ? "selected" : ""}" data-spicy="${option.id}">
-            <img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />
+            ${option.image ? `<img src="${assetUrl(`/assets/menu/${option.image}`)}" alt="${option.name}" />` : ""}
             <h4>${option.name}</h4>
           </div>
         `).join("")}
@@ -751,7 +773,7 @@ wizardNext.addEventListener("click", () => {
     return setStatus("Selecciona un tamaño.");
   }
 
-  if (step === 1 && !ramen.spicy) {
+  if (step === 1 && (ramen.spicy === null || ramen.spicy === undefined)) {
     return setStatus("Selecciona nivel de picante.");
   }
 
@@ -951,9 +973,31 @@ function buildTableLabel(value) {
   return value === "PL" ? "Para llevar" : `Mesa ${value}`;
 }
 
+function getLocalDateKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getOrderDateKey(order) {
+  return getLocalDateKey(order.createdAt || order.timestamp || order.updatedAt);
+}
+
+function ensureHistoryDateDefault() {
+  if (!historyDate || historyDate.value) return;
+  historyDate.value = getLocalDateKey(new Date().toISOString());
+}
+
 function getFilteredHistoryOrders() {
   let filtered = [...historyOrders];
   const tableFilter = historyTable ? historyTable.value : "";
+  const dateFilter = historyDate ? historyDate.value : "";
   if (historyViewMode === "active") {
     filtered = filtered.filter((order) => ["pending", "preparing", "ready", "delivered"].includes(order.status));
   } else {
@@ -962,7 +1006,52 @@ function getFilteredHistoryOrders() {
   if (tableFilter) {
     filtered = filtered.filter((order) => order.table === tableFilter);
   }
+  if (dateFilter) {
+    filtered = filtered.filter((order) => getOrderDateKey(order) === dateFilter);
+  }
   return filtered;
+}
+
+function getCashClosingOrdersByDate(dateKey) {
+  if (!dateKey) return [];
+  return historyOrders.filter((order) => order.status === "paid" && getOrderDateKey(order) === dateKey);
+}
+
+function hideCashClosingSummary() {
+  if (!historyCashClosing) return;
+  historyCashClosing.classList.add("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = "";
+  }
+  if (historyCashClosingList) {
+    historyCashClosingList.innerHTML = "";
+  }
+  if (historyCashClosingTotal) {
+    historyCashClosingTotal.textContent = formatPrice(0);
+  }
+}
+
+function renderCashClosingSummary() {
+  if (!historyDate || !historyCashClosing || !historyCashClosingList || !historyCashClosingTotal) return;
+  const dateKey = historyDate.value;
+  const orders = getCashClosingOrdersByDate(dateKey);
+  const lines = orders.map((order) => {
+    const total = calculateOrderTotal(order);
+    return `
+      <div class="history-cash-line">
+        <span>${buildTableLabel(order.table)}</span>
+        <span>${formatTime(order.createdAt)}</span>
+        <strong>${formatPrice(total)}</strong>
+      </div>
+    `;
+  }).join("");
+  historyCashClosing.classList.remove("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = `Fecha: ${dateKey}`;
+  }
+  historyCashClosingList.innerHTML = lines || "<p>No hay comandas pagadas para esta fecha.</p>";
+  const total = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+  historyCashClosingTotal.textContent = formatPrice(total);
 }
 
 function renderHistoryList(orders) {
@@ -974,15 +1063,16 @@ function renderHistoryList(orders) {
   }
   orders.forEach((order) => {
     const item = document.createElement("div");
-    item.className = "cart-item";
+    item.className = "cart-item history-order-card";
     const shortId = order.id.split("-").slice(-1)[0];
     const statusLabel = order.status.toUpperCase();
+    const orderTotal = calculateOrderTotal(order);
     item.innerHTML = `
       <div class="cart-item-header">
-        <strong>${shortId}</strong>
-        <span>${formatPrice(order.totals.total)}</span>
+        <strong>${buildTableLabel(order.table)}</strong>
+        <span>${formatPrice(orderTotal)}</span>
       </div>
-      <small>${formatTime(order.createdAt)} · ${buildTableLabel(order.table)} · ${statusLabel}</small>
+      <small>${formatTime(order.createdAt)} · ${statusLabel} · ${shortId}</small>
     `;
     if (historyViewMode === "active") {
       const actions = document.createElement("div");
@@ -1032,7 +1122,7 @@ function renderHistoryTicket(order) {
   const lines = order.items.map((item) => {
     const lineTotal = item.qty * item.unitPrice;
     const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-    const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+    const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
     
     // Construir nombre con extras incluidos en UNA SOLA LÍNEA
     let displayName = `${item.name}${size}${spicy}`;
@@ -1100,6 +1190,67 @@ function renderHistoryTicket(order) {
   historyTicket.appendChild(actions);
 }
 
+function renderPaymentPreviewTicket(order) {
+  if (!order) return;
+
+  cartItems.innerHTML = "";
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  items.forEach((item) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cart-item";
+
+    const header = document.createElement("div");
+    header.className = "cart-item-header";
+
+    const title = document.createElement("strong");
+    title.textContent = `${item.qty}x ${item.name}`;
+
+    const lineTotal = (item.qty || 0) * (item.unitPrice || 0);
+    const price = document.createElement("span");
+    price.textContent = formatPrice(lineTotal);
+
+    header.append(title, price);
+    wrapper.appendChild(header);
+
+    if (item.meta) {
+      const detail = document.createElement("small");
+      detail.textContent = buildRamenDetail(item.meta);
+      wrapper.appendChild(detail);
+    }
+
+    cartItems.appendChild(wrapper);
+  });
+
+  const subtotal = order.totals && typeof order.totals.subtotal === "number"
+    ? order.totals.subtotal
+    : calculateOrderTotal(order);
+  const total = calculateOrderTotal(order);
+  subtotalEl.textContent = formatPrice(subtotal);
+  totalEl.textContent = formatPrice(total);
+
+  const actions = document.createElement("div");
+  actions.className = "cart-item";
+
+  const confirmBtn = document.createElement("button");
+  confirmBtn.className = "primary";
+  confirmBtn.textContent = "CONFIRMAR PAGO";
+  confirmBtn.addEventListener("click", async () => {
+    await updateHistoryStatus(order.id, "paid");
+    await fetchHistoryOrders();
+    renderActivePanel();
+    renderCart();
+  });
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "ghost";
+  cancelBtn.textContent = "Cancelar";
+  cancelBtn.addEventListener("click", () => renderCart());
+
+  actions.append(confirmBtn, cancelBtn);
+  cartItems.appendChild(actions);
+}
+
 function getActivePanelOrders() {
   return historyOrders.filter((order) => ["pending", "preparing", "ready", "delivered"].includes(order.status));
 }
@@ -1123,7 +1274,7 @@ function renderActivePanel() {
     const statusLabel = order.status.toUpperCase();
     const items = order.items.map((item) => {
       const size = item.meta && item.meta.size ? ` ${item.meta.size}` : "";
-      const spicy = item.meta && item.meta.spicy ? ` Picante ${item.meta.spicy}` : "";
+      const spicy = item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined ? ` Picante ${item.meta.spicy}` : "";
       let displayName = `${item.name}${size}${spicy}`;
       if (item.meta && item.meta.extras && item.meta.extras.length > 0) {
         const extraNames = item.meta.extras.map((extra) => extra.name).join(" + ");
@@ -1135,7 +1286,7 @@ function renderActivePanel() {
     if (order.status === "ready") {
       label = "LISTO (ENTREGAR)";
     } else if (order.status === "delivered") {
-      label = "COBRAR";
+      label = "MARCAR PAGADA";
     }
     const actionClass = order.status === "ready"
       ? "action-ready"
@@ -1165,10 +1316,11 @@ function renderActivePanel() {
     if (order.status === "ready") {
       button.addEventListener("click", async () => {
         await updateHistoryStatus(order.id, "delivered");
-        await openHistoryForOrder(order.id);
+        await fetchHistoryOrders();
+        renderActivePanel();
       });
     } else if (order.status === "delivered") {
-      button.addEventListener("click", () => openHistoryForOrder(order.id));
+      button.addEventListener("click", () => renderPaymentPreviewTicket(order));
     } else {
       button.disabled = true;
     }
@@ -1178,6 +1330,7 @@ function renderActivePanel() {
 async function openHistoryForOrder(orderId) {
   historyModal.classList.remove("hidden");
   try {
+    ensureHistoryDateDefault();
     await fetchHistoryOrders();
     refreshHistoryView();
     const current = historyOrders.find((order) => order.id === orderId);
@@ -1196,6 +1349,8 @@ async function fetchHistoryOrders() {
 }
 
 function refreshHistoryView() {
+  ensureHistoryDateDefault();
+  hideCashClosingSummary();
   const filtered = getFilteredHistoryOrders();
   renderHistoryList(filtered);
   renderActivePanel();
@@ -1221,7 +1376,6 @@ async function updateHistoryStatus(orderId, status, extra = {}) {
     refreshHistoryView();
   } catch (error) {
     console.error(error);
-    setStatus("No se pudo actualizar la orden.");
   }
 }
 
@@ -1235,6 +1389,8 @@ function cancelHistoryOrder(orderId) {
 
 async function openHistoryModal() {
   historyModal.classList.remove("hidden");
+  ensureHistoryDateDefault();
+  hideCashClosingSummary();
   if (historyStatus && historyStatus.parentElement && !historyToggleButton) {
     historyToggleButton = document.createElement("button");
     historyToggleButton.className = "primary history-toggle";
@@ -1258,6 +1414,37 @@ async function openHistoryModal() {
 function closeHistoryModal() {
   historyModal.classList.add("hidden");
   activeHistoryOrderId = null;
+  hideCashClosingSummary();
+}
+
+async function cleanupTestOrders() {
+  ensureHistoryDateDefault();
+  if (!historyDate || !historyDate.value) {
+    return setStatus("Selecciona una fecha para limpiar pruebas.");
+  }
+  const confirmation = prompt(`Escribe LIMPIAR para borrar comandas de prueba del día ${historyDate.value}`);
+  if (confirmation !== "LIMPIAR") {
+    return;
+  }
+  try {
+    const response = await fetch(apiUrl("/api/orders/cleanup-tests"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmText: "LIMPIAR",
+        date: historyDate.value
+      })
+    });
+    if (!response.ok) {
+      throw new Error("No se pudo limpiar pruebas");
+    }
+    await fetchHistoryOrders();
+    refreshHistoryView();
+    setStatus("Comandas de prueba eliminadas.");
+  } catch (error) {
+    console.error(error);
+    setStatus("No se pudo limpiar comandas de prueba.");
+  }
 }
 
 if (openHistory) {
@@ -1274,6 +1461,21 @@ if (historyStatus) {
 
 if (historyTable) {
   historyTable.addEventListener("change", refreshHistoryView);
+}
+
+if (historyDate) {
+  historyDate.addEventListener("change", refreshHistoryView);
+}
+
+if (runCashClosing) {
+  runCashClosing.addEventListener("click", () => {
+    ensureHistoryDateDefault();
+    renderCashClosingSummary();
+  });
+}
+
+if (cleanupTestOrdersButton) {
+  cleanupTestOrdersButton.addEventListener("click", cleanupTestOrders);
 }
 
 if (promoToggle) {
