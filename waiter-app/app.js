@@ -54,6 +54,13 @@ const historyList = document.getElementById("historyList");
 const historyTicket = document.getElementById("historyTicket");
 const historyStatus = document.getElementById("historyStatus");
 const historyTable = document.getElementById("historyTable");
+const historyDate = document.getElementById("historyDate");
+const runCashClosing = document.getElementById("runCashClosing");
+const cleanupTestOrdersButton = document.getElementById("cleanupTestOrders");
+const historyCashClosing = document.getElementById("historyCashClosing");
+const historyCashClosingDate = document.getElementById("historyCashClosingDate");
+const historyCashClosingList = document.getElementById("historyCashClosingList");
+const historyCashClosingTotal = document.getElementById("historyCashClosingTotal");
 
 let historyOrders = [];
 let activeHistoryOrderId = null;
@@ -966,9 +973,31 @@ function buildTableLabel(value) {
   return value === "PL" ? "Para llevar" : `Mesa ${value}`;
 }
 
+function getLocalDateKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getOrderDateKey(order) {
+  return getLocalDateKey(order.createdAt || order.timestamp || order.updatedAt);
+}
+
+function ensureHistoryDateDefault() {
+  if (!historyDate || historyDate.value) return;
+  historyDate.value = getLocalDateKey(new Date().toISOString());
+}
+
 function getFilteredHistoryOrders() {
   let filtered = [...historyOrders];
   const tableFilter = historyTable ? historyTable.value : "";
+  const dateFilter = historyDate ? historyDate.value : "";
   if (historyViewMode === "active") {
     filtered = filtered.filter((order) => ["pending", "preparing", "ready", "delivered"].includes(order.status));
   } else {
@@ -977,7 +1006,52 @@ function getFilteredHistoryOrders() {
   if (tableFilter) {
     filtered = filtered.filter((order) => order.table === tableFilter);
   }
+  if (dateFilter) {
+    filtered = filtered.filter((order) => getOrderDateKey(order) === dateFilter);
+  }
   return filtered;
+}
+
+function getCashClosingOrdersByDate(dateKey) {
+  if (!dateKey) return [];
+  return historyOrders.filter((order) => order.status === "paid" && getOrderDateKey(order) === dateKey);
+}
+
+function hideCashClosingSummary() {
+  if (!historyCashClosing) return;
+  historyCashClosing.classList.add("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = "";
+  }
+  if (historyCashClosingList) {
+    historyCashClosingList.innerHTML = "";
+  }
+  if (historyCashClosingTotal) {
+    historyCashClosingTotal.textContent = formatPrice(0);
+  }
+}
+
+function renderCashClosingSummary() {
+  if (!historyDate || !historyCashClosing || !historyCashClosingList || !historyCashClosingTotal) return;
+  const dateKey = historyDate.value;
+  const orders = getCashClosingOrdersByDate(dateKey);
+  const lines = orders.map((order) => {
+    const total = calculateOrderTotal(order);
+    return `
+      <div class="history-cash-line">
+        <span>${buildTableLabel(order.table)}</span>
+        <span>${formatTime(order.createdAt)}</span>
+        <strong>${formatPrice(total)}</strong>
+      </div>
+    `;
+  }).join("");
+  historyCashClosing.classList.remove("hidden");
+  if (historyCashClosingDate) {
+    historyCashClosingDate.textContent = `Fecha: ${dateKey}`;
+  }
+  historyCashClosingList.innerHTML = lines || "<p>No hay comandas pagadas para esta fecha.</p>";
+  const total = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+  historyCashClosingTotal.textContent = formatPrice(total);
 }
 
 function renderHistoryList(orders) {
@@ -989,15 +1063,16 @@ function renderHistoryList(orders) {
   }
   orders.forEach((order) => {
     const item = document.createElement("div");
-    item.className = "cart-item";
+    item.className = "cart-item history-order-card";
     const shortId = order.id.split("-").slice(-1)[0];
     const statusLabel = order.status.toUpperCase();
+    const orderTotal = calculateOrderTotal(order);
     item.innerHTML = `
       <div class="cart-item-header">
-        <strong>${shortId}</strong>
-        <span>${formatPrice(order.totals.total)}</span>
+        <strong>${buildTableLabel(order.table)}</strong>
+        <span>${formatPrice(orderTotal)}</span>
       </div>
-      <small>${formatTime(order.createdAt)} · ${buildTableLabel(order.table)} · ${statusLabel}</small>
+      <small>${formatTime(order.createdAt)} · ${statusLabel} · ${shortId}</small>
     `;
     if (historyViewMode === "active") {
       const actions = document.createElement("div");
@@ -1180,10 +1255,15 @@ function renderActivePanel() {
     if (order.status === "ready") {
       button.addEventListener("click", async () => {
         await updateHistoryStatus(order.id, "delivered");
-        await openHistoryForOrder(order.id);
+        await fetchHistoryOrders();
+        renderActivePanel();
       });
     } else if (order.status === "delivered") {
-      button.addEventListener("click", () => openHistoryForOrder(order.id));
+      button.addEventListener("click", async () => {
+        await updateHistoryStatus(order.id, "paid");
+        await fetchHistoryOrders();
+        renderActivePanel();
+      });
     } else {
       button.disabled = true;
     }
@@ -1193,6 +1273,7 @@ function renderActivePanel() {
 async function openHistoryForOrder(orderId) {
   historyModal.classList.remove("hidden");
   try {
+    ensureHistoryDateDefault();
     await fetchHistoryOrders();
     refreshHistoryView();
     const current = historyOrders.find((order) => order.id === orderId);
@@ -1211,6 +1292,8 @@ async function fetchHistoryOrders() {
 }
 
 function refreshHistoryView() {
+  ensureHistoryDateDefault();
+  hideCashClosingSummary();
   const filtered = getFilteredHistoryOrders();
   renderHistoryList(filtered);
   updateHistoryDailyTotal(filtered);
@@ -1251,6 +1334,8 @@ function cancelHistoryOrder(orderId) {
 
 async function openHistoryModal() {
   historyModal.classList.remove("hidden");
+  ensureHistoryDateDefault();
+  hideCashClosingSummary();
   if (historyStatus && historyStatus.parentElement && !historyToggleButton) {
     historyToggleButton = document.createElement("button");
     historyToggleButton.className = "primary history-toggle";
@@ -1274,6 +1359,37 @@ async function openHistoryModal() {
 function closeHistoryModal() {
   historyModal.classList.add("hidden");
   activeHistoryOrderId = null;
+  hideCashClosingSummary();
+}
+
+async function cleanupTestOrders() {
+  ensureHistoryDateDefault();
+  if (!historyDate || !historyDate.value) {
+    return setStatus("Selecciona una fecha para limpiar pruebas.");
+  }
+  const confirmation = prompt(`Escribe LIMPIAR para borrar comandas de prueba del día ${historyDate.value}`);
+  if (confirmation !== "LIMPIAR") {
+    return;
+  }
+  try {
+    const response = await fetch(apiUrl("/api/orders/cleanup-tests"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmText: "LIMPIAR",
+        date: historyDate.value
+      })
+    });
+    if (!response.ok) {
+      throw new Error("No se pudo limpiar pruebas");
+    }
+    await fetchHistoryOrders();
+    refreshHistoryView();
+    setStatus("Comandas de prueba eliminadas.");
+  } catch (error) {
+    console.error(error);
+    setStatus("No se pudo limpiar comandas de prueba.");
+  }
 }
 
 if (openHistory) {
@@ -1290,6 +1406,21 @@ if (historyStatus) {
 
 if (historyTable) {
   historyTable.addEventListener("change", refreshHistoryView);
+}
+
+if (historyDate) {
+  historyDate.addEventListener("change", refreshHistoryView);
+}
+
+if (runCashClosing) {
+  runCashClosing.addEventListener("click", () => {
+    ensureHistoryDateDefault();
+    renderCashClosingSummary();
+  });
+}
+
+if (cleanupTestOrdersButton) {
+  cleanupTestOrdersButton.addEventListener("click", cleanupTestOrders);
 }
 
 if (promoToggle) {
