@@ -1429,6 +1429,7 @@ function refreshHistoryView() {
   hideCashClosingSummary();
   const filtered = getFilteredHistoryOrders();
   renderHistoryList(filtered);
+  updateHistoryDailyTotal(filtered);
   renderActivePanel();
   if (activeHistoryOrderId) {
     const current = historyOrders.find((order) => order.id === activeHistoryOrderId);
