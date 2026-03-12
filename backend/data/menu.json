@@ -172,6 +172,27 @@
       "image": "mango-naranja.png"
     },
     {
+      "id": "dessert_muffin",
+      "name": "Muffin",
+      "category": "desserts",
+      "price": 35,
+      "image": "muffin.png"
+    },
+    {
+      "id": "dessert_brownie",
+      "name": "Brownie",
+      "category": "desserts",
+      "price": 40,
+      "image": "brownie.png"
+    },
+    {
+      "id": "dessert_galleta",
+      "name": "Galleta",
+      "category": "desserts",
+      "price": 15,
+      "image": "galleta.png"
+    },
+    {
       "id": "spicy_1",
       "name": "Picante 1",
       "category": "spicy",
