@@ -35,6 +35,7 @@ body {
 }
 
 .logo {
+  height: 36px;
   height: clamp(32px, 3vw, 36px);
   width: auto;
   object-fit: contain;
