@@ -18,7 +18,8 @@ const categoryTitles = {
   ramen: "Ramen",
   extras: "Extras",
   sides: "Acompañamientos",
-  drinks: "Bebidas"
+  drinks: "Bebidas",
+  desserts: "Postres"
 };
 
 const categoryButtons = document.querySelectorAll(".category");
