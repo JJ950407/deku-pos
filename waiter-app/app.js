@@ -1407,7 +1407,7 @@ function renderActivePanel() {
         renderActivePanel();
       });
     } else if (order.status === "delivered") {
-      button.addEventListener("click", () => renderPaymentPreviewTicket(order));
+      button.addEventListener("click", () => openHistoryForOrder(order.id));
     } else {
       button.disabled = true;
     }
