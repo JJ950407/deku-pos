@@ -56,6 +56,9 @@ app.use("/api", (req, res, next) => {
   if (/^\/orders\/[^/]+$/.test(req.path) && req.method === "PATCH") {
     return next();
   }
+  if (/^\/orders\/[^/]+\/items\/\d+$/.test(req.path) && req.method === "PATCH") {
+    return next();
+  }
   if (isAuthenticated(req)) {
     return next();
   }
@@ -557,7 +560,10 @@ app.post("/api/orders", (req, res) => {
     createdAt: now.toISOString(),
     status: "pending",
     table,
-    items: req.body.items,
+    items: req.body.items.map((item) => ({
+      ...item,
+      prepared: item && typeof item.prepared === "boolean" ? item.prepared : false
+    })),
     totals,
     note,
     notes: noteValue
@@ -611,7 +617,8 @@ app.post("/api/orders/:id/items", (req, res) => {
       qty: Number(item && item.qty),
       basePrice: Number(item && item.basePrice),
       unitPrice: Number(item && item.unitPrice),
-      meta: item && item.meta ? item.meta : {}
+      meta: item && item.meta ? item.meta : {},
+      prepared: item && typeof item.prepared === "boolean" ? item.prepared : false
     }))
     .filter((item) => item.productId && item.name && Number.isFinite(item.qty) && item.qty > 0 && Number.isFinite(item.unitPrice));
 
@@ -649,6 +656,34 @@ app.post("/api/orders/:id/items", (req, res) => {
   saveOrders(orders);
   broadcast("order:updated", order);
   syncReadyTimer(order);
+  res.json(order);
+});
+
+app.patch("/api/orders/:orderId/items/:index", (req, res) => {
+  const { orderId, index } = req.params;
+  const { prepared } = req.body || {};
+  const itemIndex = Number(index);
+
+  if (!Number.isInteger(itemIndex) || itemIndex < 0) {
+    return res.status(400).json({ error: "Índice inválido." });
+  }
+  if (typeof prepared !== "boolean") {
+    return res.status(400).json({ error: "Campo prepared inválido." });
+  }
+
+  const orders = loadOrders();
+  const order = orders.find((item) => item.id === orderId);
+  if (!order) {
+    return res.status(404).json({ error: "Orden no encontrada." });
+  }
+  if (!Array.isArray(order.items) || !order.items[itemIndex]) {
+    return res.status(404).json({ error: "Item no encontrado." });
+  }
+
+  order.items[itemIndex].prepared = prepared;
+
+  saveOrders(orders);
+  broadcast("order:updated", order);
   res.json(order);
 });
 

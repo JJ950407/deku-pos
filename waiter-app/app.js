@@ -282,6 +282,48 @@ function getCartQty(productId) {
   return item ? item.qty : 0;
 }
 
+function showRamenSelector(ramenItems, productName, callback) {
+  const overlay = document.createElement("div");
+  overlay.className = "ramen-selector-overlay";
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.background = "rgba(0, 0, 0, 0.35)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.padding = "16px";
+  overlay.style.zIndex = "1200";
+
+  const selector = document.createElement("div");
+  selector.className = "ramen-selector";
+  selector.style.background = "#fff";
+  selector.style.borderRadius = "12px";
+  selector.style.padding = "16px";
+  selector.style.width = "min(320px, 100%)";
+  selector.style.display = "grid";
+  selector.style.gap = "8px";
+
+  const question = document.createElement("p");
+  question.textContent = `¿A qué ramen agregar ${productName}?`;
+  question.style.margin = "0 0 4px";
+
+  selector.appendChild(question);
+
+  ramenItems.forEach((ramen) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = ramen.name;
+    button.addEventListener("click", () => {
+      overlay.remove();
+      callback(ramen);
+    });
+    selector.appendChild(button);
+  });
+
+  overlay.appendChild(selector);
+  document.body.appendChild(overlay);
+}
+
 function adjustCartItem(productId, delta) {
   const product = getProductById(productId);
   if (!product) return;
@@ -291,41 +333,42 @@ function adjustCartItem(productId, delta) {
     if (!ramenItems.length) {
       return setStatus("Agrega un ramen primero.");
     }
-    let targetRamen = ramenItems[0];
-    if (ramenItems.length > 1) {
-      const options = ramenItems.map((entry, index) => `${index + 1}. ${entry.name}`).join("\n");
-      const response = prompt(`¿A qué ramen agregar ${product.name}?\n${options}`);
-      const selection = Number(response);
-      if (!Number.isInteger(selection) || selection < 1 || selection > ramenItems.length) {
+    const applyExtraToRamen = (targetRamen) => {
+      targetRamen.meta.extras = targetRamen.meta.extras || [];
+      const existingExtra = targetRamen.meta.extras.find((extra) => extra.productId === product.id);
+      let appliedDelta = 0;
+      if (existingExtra) {
+        existingExtra.qty += delta;
+        appliedDelta = delta;
+        if (existingExtra.qty <= 0) {
+          targetRamen.meta.extras = targetRamen.meta.extras.filter((extra) => extra !== existingExtra);
+        }
+      } else if (delta > 0) {
+        targetRamen.meta.extras.push({
+          productId: product.id,
+          name: product.name,
+          qty: delta,
+          unitPrice: product.price
+        });
+        appliedDelta = delta;
+      } else {
         return;
       }
-      targetRamen = ramenItems[selection - 1];
-    }
-    targetRamen.meta.extras = targetRamen.meta.extras || [];
-    const existingExtra = targetRamen.meta.extras.find((extra) => extra.productId === product.id);
-    let appliedDelta = 0;
-    if (existingExtra) {
-      existingExtra.qty += delta;
-      appliedDelta = delta;
-      if (existingExtra.qty <= 0) {
-        targetRamen.meta.extras = targetRamen.meta.extras.filter((extra) => extra !== existingExtra);
-      }
-    } else if (delta > 0) {
-      targetRamen.meta.extras.push({
-        productId: product.id,
-        name: product.name,
-        qty: delta,
-        unitPrice: product.price
+      const adjustment = product.price * appliedDelta;
+      const minPrice = typeof targetRamen.basePrice === "number" ? targetRamen.basePrice : 0;
+      targetRamen.unitPrice = Math.max(minPrice, targetRamen.unitPrice + adjustment);
+      renderCart();
+      renderProducts();
+    };
+
+    if (ramenItems.length > 1) {
+      showRamenSelector(ramenItems, product.name, (targetRamen) => {
+        applyExtraToRamen(targetRamen);
       });
-      appliedDelta = delta;
-    } else {
       return;
     }
-    const adjustment = product.price * appliedDelta;
-    const minPrice = typeof targetRamen.basePrice === "number" ? targetRamen.basePrice : 0;
-    targetRamen.unitPrice = Math.max(minPrice, targetRamen.unitPrice + adjustment);
-    renderCart();
-    renderProducts();
+
+    applyExtraToRamen(ramenItems[0]);
     return;
   }
 
@@ -1302,10 +1345,6 @@ async function appendItemsToOrder() {
   if (!state.cart.length) {
     return setStatus("Agrega productos antes de confirmar.");
   }
-  if (state.cart.some((item) => item.meta && item.meta.size)) {
-    return setStatus("En esta versión solo puedes agregar entradas y bebidas.");
-  }
-
   const items = state.cart.map((item) => ({
     productId: item.productId,
     name: item.name,
