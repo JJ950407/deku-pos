@@ -6,24 +6,43 @@ let orders = [];
 let menuMap = new Map();
 let menuNameMap = new Map();
 
-function toggleItem(orderId, itemIndex) {
+async function toggleItem(orderId, itemIndex) {
   const order = orders.find((entry) => entry.id === orderId);
   if (!order || !Array.isArray(order.items) || !order.items[itemIndex]) {
     return;
   }
 
-  order.items[itemIndex].done = !order.items[itemIndex].done;
-  renderOrders();
+  const nextPrepared = !Boolean(order.items[itemIndex].prepared);
+
+  try {
+    const response = await fetch(apiUrl(`/api/orders/${orderId}/items/${itemIndex}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prepared: nextPrepared })
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo actualizar item");
+    }
+
+    const updatedOrder = await response.json();
+    orders = orders.map((entry) => (entry.id === updatedOrder.id ? updatedOrder : entry));
+    renderOrders();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function mergeOrderItemsDone(previousOrder, nextOrder) {
-  if (!previousOrder || !Array.isArray(previousOrder.items) || !Array.isArray(nextOrder.items)) {
+  if (!Array.isArray(nextOrder.items)) {
     return nextOrder;
   }
 
   nextOrder.items = nextOrder.items.map((item, index) => ({
     ...item,
-    done: (previousOrder.items[index] && previousOrder.items[index].done) || false
+    prepared: typeof item.prepared === "boolean"
+      ? item.prepared
+      : Boolean(previousOrder && previousOrder.items && previousOrder.items[index] && previousOrder.items[index].prepared)
   }));
 
   return nextOrder;
@@ -139,7 +158,7 @@ function renderOrders() {
     items.className = "order-items";
     order.items.forEach((item, itemIndex) => {
       const line = document.createElement("div");
-      line.className = `order-item${item.done ? " done" : ""}`;
+      line.className = `order-item${item.prepared ? " done" : ""}`;
       line.setAttribute("role", "button");
       line.tabIndex = 0;
       line.addEventListener("click", () => toggleItem(order.id, itemIndex));
@@ -152,7 +171,7 @@ function renderOrders() {
 
       const check = document.createElement("span");
       check.className = "check";
-      check.textContent = item.done ? "✔" : "⬜";
+      check.textContent = item.prepared ? "✔" : "⬜";
       line.appendChild(check);
 
       const imageSrc = getProductImage(item.productId);
@@ -167,6 +186,12 @@ function renderOrders() {
       const info = document.createElement("div");
       info.className = "item-info";
       info.textContent = buildItemLine(item);
+
+      if (item.meta && item.meta.note) {
+        const note = document.createElement("div");
+        note.textContent = `→ ${item.meta.note}`;
+        info.appendChild(note);
+      }
 
       if (item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined) {
         const spicyIcon = document.createElement("img");
