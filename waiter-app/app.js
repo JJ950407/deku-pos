@@ -1302,10 +1302,6 @@ async function appendItemsToOrder() {
   if (!state.cart.length) {
     return setStatus("Agrega productos antes de confirmar.");
   }
-  if (state.cart.some((item) => item.meta && item.meta.size)) {
-    return setStatus("En esta versión solo puedes agregar entradas y bebidas.");
-  }
-
   const items = state.cart.map((item) => ({
     productId: item.productId,
     name: item.name,
