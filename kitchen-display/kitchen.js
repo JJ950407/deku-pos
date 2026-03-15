@@ -187,6 +187,12 @@ function renderOrders() {
       info.className = "item-info";
       info.textContent = buildItemLine(item);
 
+      if (item.meta && item.meta.note) {
+        const note = document.createElement("div");
+        note.textContent = `→ ${item.meta.note}`;
+        info.appendChild(note);
+      }
+
       if (item.meta && item.meta.spicy !== null && item.meta.spicy !== undefined) {
         const spicyIcon = document.createElement("img");
         spicyIcon.className = "spicy-icon";

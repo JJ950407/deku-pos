@@ -421,12 +421,31 @@ function renderCart() {
       const detail = document.createElement("small");
       detail.textContent = buildRamenDetail(item.meta);
 
+      const noteBtn = document.createElement("button");
+      noteBtn.className = "ghost";
+      noteBtn.textContent = "Agregar nota";
+      noteBtn.addEventListener("click", () => {
+        const response = prompt("Nota para este ramen:", item.meta.note || "");
+        const text = typeof response === "string" ? response.trim() : "";
+        if (!text) {
+          return;
+        }
+        item.meta.note = text;
+        renderCart();
+      });
+
       const removeBtn = document.createElement("button");
       removeBtn.className = "ghost";
       removeBtn.textContent = "Quitar";
       removeBtn.addEventListener("click", () => removeCartItem(item.id));
 
-      wrapper.append(header, detail, removeBtn);
+      if (item.meta.note) {
+        const noteDetail = document.createElement("small");
+        noteDetail.textContent = `nota: ${item.meta.note}`;
+        wrapper.append(header, detail, noteDetail, noteBtn, removeBtn);
+      } else {
+        wrapper.append(header, detail, noteBtn, removeBtn);
+      }
     } else {
       const controls = buildQtyControl(item.productId, item.qty);
       wrapper.append(header, controls);
